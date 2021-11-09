@@ -129,6 +129,25 @@ def determine_destination_name(
     return destination_name
 
 
+def walk_dir(client, prefix, files, folders):
+    original_dir = client.pwd()
+    try:
+        client.cwd('/' + prefix)
+        folders.append(prefix)
+    except ftplib.error_perm as e:
+        files.append(prefix)
+        return  # ignore non-directores and ones we cannot enter
+
+    names = client.nlst()
+    for name in names:
+        walk_dir(client, prefix + '/' + name, files, folders)
+
+    for folder in folders:
+        walk_dir(client, prefix + '/' + folder, files, folders)
+    client.cwd(original_dir)  # return to cwd of our caller
+    return files, folders
+
+
 def find_ftp_file_names(client, prefix=''):
     """
     Fetched all the files in the folder on the FTP server
@@ -198,13 +217,13 @@ def get_client(host, port, username, password):
     specified credentials
     """
     try:
-        client = ftplib.FTP_TLS(timeout=3600)
+        # client = ftplib.FTP_TLS(timeout=3600)
+        client = ftplib.FTP(timeout=3600)
         client.connect(host, int(port))
         client.login(username, password)
         client.set_pasv(True)
-        client.prot_p()
-        client.set_debuglevel(2)
-        client.cwd('/')
+        # client.prot_p()
+        # client.set_debuglevel(2)
         return client
     except Exception as e:
         print(f'Error accessing the FTP server with the specified credentials'
@@ -231,10 +250,14 @@ def main():
 
     client = get_client(host=host, port=port, username=username,
                         password=password)
-    code.interact(local=locals())
+
+    # code.interact(local=locals())
     if source_file_name_match_type == 'regex_match':
-        files = find_ftp_file_names(client=client, prefix=source_folder_name)
-        # code.interact(local=locals())
+        folders = []
+        files = []
+        files, folders = walk_dir(
+            client=client, prefix=source_folder_name, files=files, folders=folders)
+        # files = find_ftp_file_names(client=client, prefix=source_folder_name)
         matching_file_names = find_matching_files(files,
                                                   re.compile(source_file_name))
         print(f'{len(matching_file_names)} files found. Preparing to download...')
