@@ -223,7 +223,7 @@ def get_client(host, port, username, password):
         client.login(username, password)
         client.set_pasv(True)
         # client.prot_p()
-        # client.set_debuglevel(2)
+        client.set_debuglevel(2)
         return client
     except Exception as e:
         print(f'Error accessing the FTP server with the specified credentials'
