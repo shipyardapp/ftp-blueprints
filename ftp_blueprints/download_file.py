@@ -223,7 +223,7 @@ def get_client(host, port, username, password):
         client.login(username, password)
         client.set_pasv(True)
         # client.prot_p()
-        client.set_debuglevel(2)
+        # client.set_debuglevel(2)
         return client
     except Exception as e:
         print(f'Error accessing the FTP server with the specified credentials'
@@ -250,7 +250,7 @@ def main():
 
     client = get_client(host=host, port=port, username=username,
                         password=password)
-    client.set_cwd(source_folder_name)
+    client.cwd('/')
     # code.interact(local=locals())
     if source_file_name_match_type == 'regex_match':
         folders = []
