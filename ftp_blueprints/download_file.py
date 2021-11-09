@@ -134,14 +134,18 @@ def walk_dir(client, prefix, files, folders):
     try:
         client.cwd('/' + prefix)
         folders.append(prefix)
+        print(f'{prefix} is a folder')
     except ftplib.error_perm as e:
         files.append(prefix)
+        print(f'{prefix} is a file')
         return  # ignore non-directores and ones we cannot enter
 
     names = client.nlst()
+    print(f'names are {names}')
     for name in names:
         walk_dir(client, prefix + '/' + name, files, folders)
 
+    print(f'folders are {folders}')
     for folder in folders:
         walk_dir(client, prefix + '/' + folder, files, folders)
     client.cwd(original_dir)  # return to cwd of our caller
