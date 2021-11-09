@@ -4,6 +4,7 @@ import re
 import json
 import tempfile
 import argparse
+import code
 
 import ftplib
 
@@ -197,9 +198,13 @@ def get_client(host, port, username, password):
     specified credentials
     """
     try:
-        client = ftplib.FTP()
+        client = ftplib.FTP_TLS(timeout=3600)
         client.connect(host, int(port))
         client.login(username, password)
+        client.set_pasv(True)
+        client.prot_p()
+        client.set_debuglevel(2)
+        client.cwd('/')
         return client
     except Exception as e:
         print(f'Error accessing the FTP server with the specified credentials'
@@ -226,9 +231,10 @@ def main():
 
     client = get_client(host=host, port=port, username=username,
                         password=password)
-
+    code.interact(local=locals())
     if source_file_name_match_type == 'regex_match':
         files = find_ftp_file_names(client=client, prefix=source_folder_name)
+        # code.interact(local=locals())
         matching_file_names = find_matching_files(files,
                                                   re.compile(source_file_name))
         print(f'{len(matching_file_names)} files found. Preparing to download...')
