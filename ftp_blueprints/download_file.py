@@ -250,7 +250,7 @@ def main():
 
     client = get_client(host=host, port=port, username=username,
                         password=password)
-
+    client.set_cwd(source_folder_name)
     # code.interact(local=locals())
     if source_file_name_match_type == 'regex_match':
         folders = []
