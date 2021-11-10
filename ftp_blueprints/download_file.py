@@ -1,10 +1,6 @@
 import os
-import io
 import re
-import json
-import tempfile
 import argparse
-import code
 import sys
 
 import ftplib
@@ -153,9 +149,9 @@ def find_files_in_directory(
             client.cwd(name)
             # If you can change the directory to the entity_name, it's a
             # folder.
-            folders.append(f'{name}')
+            folders.append(name)
         except ftplib.error_perm as e:
-            files.append(f'{name}')  # If you can't, it's a file.
+            files.append(name)  # If you can't, it's a file.
             continue
         client.cwd(original_dir)
 
