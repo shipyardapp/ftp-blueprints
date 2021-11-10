@@ -5,8 +5,11 @@ import json
 import tempfile
 import argparse
 import code
+import sys
 
 import ftplib
+
+EXIT_CODE_NO_MATCHES_FOUND = 200
 
 
 def get_args():
@@ -237,6 +240,13 @@ def main():
 
         matching_file_names = find_matching_files(files,
                                                   re.compile(source_file_name))
+
+        number_of_matches = len(matching_file_names)
+
+        if number_of_matches == 0:
+            print(f'No matches were found for regex "{source_file_name}".')
+            sys.exit(EXIT_CODE_NO_MATCHES_FOUND)
+
         print(f'{len(matching_file_names)} files found. Preparing to download...')
 
         for index, file_name in enumerate(matching_file_names):
