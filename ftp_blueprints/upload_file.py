@@ -1,11 +1,13 @@
 import os
 import re
-import json
-import tempfile
 import argparse
 import glob
+import sys
 
 import ftplib
+
+EXIT_CODE_INCORRECT_CREDENTIALS = 3
+EXIT_CODE_NO_MATCHES_FOUND = 200
 
 
 def get_args():
@@ -154,17 +156,19 @@ def find_all_file_matches(file_names, file_name_re):
     return matching_file_names
 
 
-def cd_into_cwd(client, destination_path):
+def create_new_folders(client, destination_path):
     """
     Changes working directory to the specified destination path
     and creates it if it doesn't exist
     """
+    original_dir = client.pwd()
     for folder in destination_path.split('/'):
         try:
             client.cwd(folder)
         except Exception as e:
             client.mkd(folder)
             client.cwd(folder)
+    client.cwd(original_dir)
 
 
 def upload_ftp_file(
@@ -200,9 +204,9 @@ def get_client(host, port, username, password):
         client.login(username, password)
         return client
     except Exception as e:
-        print(f'Error accessing the FTP server with the specified credentials'
-              f' {host}:{port} {username}:{password}')
-        raise(e)
+        print(f'Error accessing the FTP server with the specified credentials')
+        print(f'The server says: {e}')
+        sys.exit(EXIT_CODE_INCORRECT_CREDENTIALS)
 
 
 def main():
@@ -226,33 +230,36 @@ def main():
         file_names = find_all_local_file_names(source_folder_name)
         matching_file_names = find_all_file_matches(
             file_names, re.compile(source_file_name))
+
+        number_of_matches = len(matching_file_names)
+
+        if number_of_matches == 0:
+            print(f'No matches were found for regex "{source_file_name}".')
+            sys.exit(EXIT_CODE_NO_MATCHES_FOUND)
+
         print(f'{len(matching_file_names)} files found. Preparing to upload...')
 
-        cwd_set = False
         for index, key_name in enumerate(matching_file_names):
             destination_full_path = determine_destination_full_path(
                 destination_folder_name=destination_folder_name,
                 destination_file_name=args.destination_file_name,
                 source_full_path=key_name, file_number=index + 1)
-            if not cwd_set and destination_folder_name != '':
-                path, _ = destination_full_path.rsplit('/', 1)
-                cd_into_cwd(client=client, destination_path=path)
-                cwd_set = True
-
+            if len(destination_full_path.split('/')) > 1:
+                path, file_name = destination_full_path.rsplit('/', 1)
+                create_new_folders(client=client, destination_path=path)
             file_name = destination_full_path.rsplit('/', 1)[-1]
             print(f'Uploading file {index+1} of {len(matching_file_names)}')
             upload_ftp_file(client=client, source_full_path=key_name,
-                            destination_full_path=file_name)
+                            destination_full_path=destination_full_path)
 
     else:
         destination_full_path = determine_destination_full_path(
             destination_folder_name=destination_folder_name,
             destination_file_name=args.destination_file_name,
             source_full_path=source_full_path)
-
         if len(destination_full_path.split('/')) > 1:
-            path, destination_full_path = destination_full_path.rsplit('/', 1)
-            cd_into_cwd(client=client, destination_path=path)
+            path, file_name = destination_full_path.rsplit('/', 1)
+            create_new_folders(client=client, destination_path=path)
 
         upload_ftp_file(client=client, source_full_path=source_full_path,
                         destination_full_path=destination_full_path)

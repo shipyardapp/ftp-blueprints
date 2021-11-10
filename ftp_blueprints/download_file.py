@@ -1,11 +1,12 @@
 import os
-import io
 import re
-import json
-import tempfile
 import argparse
+import sys
 
 import ftplib
+
+EXIT_CODE_INCORRECT_CREDENTIALS = 3
+EXIT_CODE_NO_MATCHES_FOUND = 200
 
 
 def get_args():
@@ -128,33 +129,35 @@ def determine_destination_name(
     return destination_name
 
 
-def find_ftp_file_names(client, prefix=''):
+def find_files_in_directory(
+        client,
+        folder_filter,
+        files,
+        folders):
     """
-    Fetched all the files in the folder on the FTP server
+    Pull in a list of all entities under a specific directory and categorize them into files and folders.
     """
-    try:
-        data = []
-        files = []
-        folders = []
-        client.dir(prefix, data.append)
-        for d in data:
-            if d.startswith('d'):
-                folders.append(d.split()[-1])
-            else:
-                name = d.split()[-1]
-                if prefix != '':
-                    files.append(f'{prefix}/{name}')
-                else:
-                    files.append(name)
-        for folder in folders:
-            if prefix:
-                folder = f'{prefix}/{folder}'
-            files.extend(find_ftp_file_names(client, folder))
-    except Exception as e:
-        print(f'Failed to find files in folder {prefix}')
-        raise(e)
+    original_dir = client.pwd()
+    names = client.nlst(folder_filter)
+    for name in names:
+        # Accounts for an issue where some FTP servers return file names
+        # without folder prefixes.
+        if '/' not in name:
+            name = f'{folder_filter}/{name}'
 
-    return files
+        try:
+            client.cwd(name)
+            # If you can change the directory to the entity_name, it's a
+            # folder.
+            folders.append(name)
+        except ftplib.error_perm as e:
+            files.append(name)  # If you can't, it's a file.
+            continue
+        client.cwd(original_dir)
+
+    folders.remove(folder_filter)
+
+    return files, folders
 
 
 def find_matching_files(file_names, file_name_re):
@@ -197,14 +200,16 @@ def get_client(host, port, username, password):
     specified credentials
     """
     try:
-        client = ftplib.FTP()
+        client = ftplib.FTP(timeout=3600)
         client.connect(host, int(port))
         client.login(username, password)
+        client.set_pasv(True)
+        client.set_debuglevel(0)
         return client
     except Exception as e:
-        print(f'Error accessing the FTP server with the specified credentials'
-              f' {host}:{port} {username}:{password}')
-        raise(e)
+        print(f'Error accessing the FTP server with the specified credentials')
+        print(f'The server says: {e}')
+        sys.exit(EXIT_CODE_INCORRECT_CREDENTIALS)
 
 
 def main():
@@ -226,11 +231,24 @@ def main():
 
     client = get_client(host=host, port=port, username=username,
                         password=password)
-
     if source_file_name_match_type == 'regex_match':
-        files = find_ftp_file_names(client=client, prefix=source_folder_name)
+        folders = [source_folder_name]
+        files = []
+        while folders != []:
+
+            folder_filter = folders[0]
+            files, folders = find_files_in_directory(
+                client=client, folder_filter=folder_filter, files=files, folders=folders)
+
         matching_file_names = find_matching_files(files,
                                                   re.compile(source_file_name))
+
+        number_of_matches = len(matching_file_names)
+
+        if number_of_matches == 0:
+            print(f'No matches were found for regex "{source_file_name}".')
+            sys.exit(EXIT_CODE_NO_MATCHES_FOUND)
+
         print(f'{len(matching_file_names)} files found. Preparing to download...')
 
         for index, file_name in enumerate(matching_file_names):
@@ -251,8 +269,13 @@ def main():
             destination_file_name=args.destination_file_name,
             source_full_path=source_full_path)
 
-        download_ftp_file(client=client, file_name=source_full_path,
-                          destination_file_name=destination_name)
+        try:
+            download_ftp_file(client=client, file_name=source_full_path,
+                              destination_file_name=destination_name)
+        except Exception as e:
+            print(f'The server says: {e}')
+            print(f'Most likely, the file name/folder name you specified has typos or the full folder name was not provided. Check these and try again.')
+            sys.exit(EXIT_CODE_NO_MATCHES_FOUND)
 
 
 if __name__ == '__main__':
