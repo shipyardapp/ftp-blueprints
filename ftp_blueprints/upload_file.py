@@ -1,10 +1,7 @@
 import os
 import re
-import json
-import tempfile
 import argparse
 import glob
-import code
 import sys
 
 import ftplib
