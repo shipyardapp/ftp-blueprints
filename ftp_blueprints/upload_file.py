@@ -5,8 +5,12 @@ import tempfile
 import argparse
 import glob
 import code
+import sys
 
 import ftplib
+
+EXIT_CODE_INCORRECT_CREDENTIALS = 3
+EXIT_CODE_NO_MATCHES_FOUND = 200
 
 
 def get_args():
@@ -203,9 +207,9 @@ def get_client(host, port, username, password):
         client.login(username, password)
         return client
     except Exception as e:
-        print(f'Error accessing the FTP server with the specified credentials'
-              f' {host}:{port} {username}:{password}')
-        raise(e)
+        print(f'Error accessing the FTP server with the specified credentials')
+        print(f'The server says: {e}')
+        sys.exit(EXIT_CODE_INCORRECT_CREDENTIALS)
 
 
 def main():
@@ -229,6 +233,13 @@ def main():
         file_names = find_all_local_file_names(source_folder_name)
         matching_file_names = find_all_file_matches(
             file_names, re.compile(source_file_name))
+
+        number_of_matches = len(matching_file_names)
+
+        if number_of_matches == 0:
+            print(f'No matches were found for regex "{source_file_name}".')
+            sys.exit(EXIT_CODE_NO_MATCHES_FOUND)
+
         print(f'{len(matching_file_names)} files found. Preparing to upload...')
 
         for index, key_name in enumerate(matching_file_names):
