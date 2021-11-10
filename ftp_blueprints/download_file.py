@@ -273,8 +273,13 @@ def main():
             destination_file_name=args.destination_file_name,
             source_full_path=source_full_path)
 
-        download_ftp_file(client=client, file_name=source_full_path,
-                          destination_file_name=destination_name)
+        try:
+            download_ftp_file(client=client, file_name=source_full_path,
+                              destination_file_name=destination_name)
+        except Exception as e:
+            print(f'The server says: {e}')
+            print(f'Most likely, the file name/folder name you specified has typos or the full folder name was not provided. Check these and try again.')
+            sys.exit(EXIT_CODE_NO_MATCHES_FOUND)
 
 
 if __name__ == '__main__':
