@@ -140,6 +140,8 @@ def find_files_in_directory(
     names = client.nlst(folder_filter)
     print(names)
     for name in names:
+        if '/' not in name:
+            name = f'{folder_filter}/{name}'
         try:
             client.cwd(name)
             folders.append(f'{name}')
