@@ -238,7 +238,7 @@ def main():
                 path, _ = destination_full_path.rsplit('/', 1)
                 cd_into_cwd(client=client, destination_path=path)
                 cwd_set = True
-
+            print(destination_full_path)
             file_name = destination_full_path.rsplit('/', 1)[-1]
             print(f'Uploading file {index+1} of {len(matching_file_names)}')
             upload_ftp_file(client=client, source_full_path=key_name,
@@ -253,7 +253,7 @@ def main():
         if len(destination_full_path.split('/')) > 1:
             path, destination_full_path = destination_full_path.rsplit('/', 1)
             cd_into_cwd(client=client, destination_path=path)
-
+        print(destination_full_path)
         upload_ftp_file(client=client, source_full_path=source_full_path,
                         destination_full_path=destination_full_path)
 
