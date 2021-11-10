@@ -9,6 +9,7 @@ import sys
 
 import ftplib
 
+EXIT_CODE_INCORRECT_CREDENTIALS = 3
 EXIT_CODE_NO_MATCHES_FOUND = 200
 
 
@@ -135,20 +136,27 @@ def determine_destination_name(
 def find_files_in_directory(
         client,
         folder_filter,
-        original_filter,
         files,
         folders):
+    """
+    Pull in a list of all entities under a specific directory and categorize them into files and folders.
+    """
     original_dir = client.pwd()
     names = client.nlst(folder_filter)
     for name in names:
+        # Accounts for an issue where some FTP servers return file names
+        # without folder prefixes.
         if '/' not in name:
             name = f'{folder_filter}/{name}'
+
         try:
             client.cwd(name)
+            # If you can change the directory to the entity_name, it's a
+            # folder.
             folders.append(f'{name}')
         except ftplib.error_perm as e:
-            files.append(f'{name}')
-            continue  # ignore non-directores and ones we cannot enter
+            files.append(f'{name}')  # If you can't, it's a file.
+            continue
         client.cwd(original_dir)
 
     folders.remove(folder_filter)
@@ -196,18 +204,16 @@ def get_client(host, port, username, password):
     specified credentials
     """
     try:
-        # client = ftplib.FTP_TLS(timeout=3600)
         client = ftplib.FTP(timeout=3600)
         client.connect(host, int(port))
         client.login(username, password)
         client.set_pasv(True)
-        # client.prot_p()
         client.set_debuglevel(0)
         return client
     except Exception as e:
-        print(f'Error accessing the FTP server with the specified credentials'
-              f' {host}:{port} {username}:{password}')
-        raise(e)
+        print(f'Error accessing the FTP server with the specified credentials')
+        print(f'The server says: {e}')
+        sys.exit(EXIT_CODE_INCORRECT_CREDENTIALS)
 
 
 def main():
@@ -236,7 +242,7 @@ def main():
 
             folder_filter = folders[0]
             files, folders = find_files_in_directory(
-                client=client, folder_filter=folder_filter, original_filter=source_folder_name, files=files, folders=folders)
+                client=client, folder_filter=folder_filter, files=files, folders=folders)
 
         matching_file_names = find_matching_files(files,
                                                   re.compile(source_file_name))
