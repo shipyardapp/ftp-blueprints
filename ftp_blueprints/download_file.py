@@ -129,6 +129,34 @@ def determine_destination_name(
     return destination_name
 
 
+def find_files_in_directory(
+        client,
+        folder_filter,
+        original_filter,
+        files,
+        folders):
+    # client.cwd(original_filter)
+    original_dir = client.pwd()
+    names = client.nlst(folder_filter)
+    print(names)
+    for name in names:
+        try:
+            client.cwd(name)
+            folders.append(f'{name}')
+            print(f'{name} is a folder')
+        except ftplib.error_perm as e:
+            files.append(f'{name}')
+            print(f'{name} is a file')
+            continue  # ignore non-directores and ones we cannot enter
+        client.cwd(original_dir)
+
+    print(files)
+    print(folders)
+    folders.remove(folder_filter)
+
+    return files, folders
+
+
 def walk_dir(client, prefix, files, folders):
     original_dir = client.pwd()
     try:
@@ -146,9 +174,14 @@ def walk_dir(client, prefix, files, folders):
         walk_dir(client, prefix + '/' + name, files, folders)
 
     print(f'folders are {folders}')
+    try:
+        folders.remove('')
+    except BaseException:
+        pass
     for folder in folders:
         walk_dir(client, prefix + '/' + folder, files, folders)
     client.cwd(original_dir)  # return to cwd of our caller
+
     return files, folders
 
 
@@ -227,7 +260,7 @@ def get_client(host, port, username, password):
         client.login(username, password)
         client.set_pasv(True)
         # client.prot_p()
-        client.set_debuglevel(2)
+        client.set_debuglevel(0)
         return client
     except Exception as e:
         print(f'Error accessing the FTP server with the specified credentials'
@@ -254,13 +287,29 @@ def main():
 
     client = get_client(host=host, port=port, username=username,
                         password=password)
-    client.cwd('/')
     # code.interact(local=locals())
     if source_file_name_match_type == 'regex_match':
-        folders = []
+        folders = [source_folder_name]
         files = []
-        files, folders = walk_dir(
-            client=client, prefix=source_folder_name, files=files, folders=folders)
+        while folders != []:
+            #     if folders[0] == source_folder_name:
+            #         folder_filter = folders[0]
+            #     else:
+            #         folder_filter = folders[0].replace(
+            #             source_folder_name + '/', '')
+
+            folder_filter = folders[0]
+            print(f'Finding files for {folder_filter}')
+            files, folders = find_files_in_directory(
+                client=client, folder_filter=folder_filter, original_filter=source_folder_name, files=files, folders=folders)
+            print(f'Present working directory is {client.pwd()}')
+
+            print(files)
+            print(folders)
+            code.interact(local=locals())
+        # code.interact(local=locals())
+        # files, folders = walk_dir(
+        #     client=client, prefix=source_folder_name, files=files, folders=folders)
         # files = find_ftp_file_names(client=client, prefix=source_folder_name)
         matching_file_names = find_matching_files(files,
                                                   re.compile(source_file_name))
