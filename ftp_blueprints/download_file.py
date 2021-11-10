@@ -306,7 +306,7 @@ def main():
 
             print(files)
             print(folders)
-            code.interact(local=locals())
+            # code.interact(local=locals())
         # code.interact(local=locals())
         # files, folders = walk_dir(
         #     client=client, prefix=source_folder_name, files=files, folders=folders)
