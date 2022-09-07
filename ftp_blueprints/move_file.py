@@ -9,7 +9,7 @@ import ftplib
 EXIT_CODE_INCORRECT_CREDENTIALS = 3
 EXIT_CODE_NO_MATCHES_FOUND = 200
 EXIT_CODE_INVALID_FILE_PATH = 201
-
+EXIT_CODE_FTP_MOVE_ERROR = 202
 
 def get_args():
     parser = argparse.ArgumentParser()
@@ -114,7 +114,7 @@ def move_ftp_file(
         client.rename(source_full_path, destination_full_path)
     except Exception as e:
         print(f"failed to move {source_full_path} due to error: {e}")
-        sys.exit()
+        sys.exit(EXIT_CODE_FTP_MOVE_ERROR)
 
     print(f'{source_full_path} successfully moved to '
           f'{destination_full_path}')
