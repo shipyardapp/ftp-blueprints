@@ -5,9 +5,10 @@ import sys
 import shutil
 import shipyard_utils as shipyard
 import ftplib
-
-EXIT_CODE_INCORRECT_CREDENTIALS = 3
-EXIT_CODE_NO_MATCHES_FOUND = 200
+try:
+    import exit_codes as ec
+except BaseException:
+    from . import exit_codes as ec
 
 
 def get_args():
@@ -100,7 +101,7 @@ def get_client(host, port, username, password):
     except Exception as e:
         print(f'Error accessing the FTP server with the specified credentials')
         print(f'The server says: {e}')
-        sys.exit(EXIT_CODE_INCORRECT_CREDENTIALS)
+        sys.exit(ec.EXIT_CODE_INCORRECT_CREDENTIALS)
 
 
 def main():
@@ -131,14 +132,14 @@ def main():
 
         if number_of_matches == 0:
             print(f'No matches were found for regex "{file_name}".')
-            sys.exit(EXIT_CODE_NO_MATCHES_FOUND)
+            sys.exit(ec.EXIT_CODE_NO_MATCHES_FOUND)
 
         for index, file_name in enumerate(matching_file_names):
             
             print(f'Deleting file {index+1} of {len(matching_file_names)} out of {number_of_matches}')
             try:
                 delete_ftp_file(client=client, folder_name=folder_name, file_name=file_name)
-            except Exception as:
+            except Exception as e:
                 print(f'Failed to delete {file_name}... Skipping')
     else:
         try:
@@ -146,8 +147,8 @@ def main():
         except Exception as e:
             print(f'The server says: {e}')
             print(f'Most likely, the file name/folder name you specified has typos or the full folder name was not provided. Check these and try again.')
-            sys.exit(EXIT_CODE_NO_MATCHES_FOUND)
+            sys.exit(ec.EXIT_CODE_NO_MATCHES_FOUND)
 
 
-if _name_ == '_main_':
+if __name__ == '__main__':
     main()

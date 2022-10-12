@@ -5,11 +5,10 @@ import glob
 import sys
 import shipyard_utils as shipyard
 import ftplib
-
-EXIT_CODE_INCORRECT_CREDENTIALS = 3
-EXIT_CODE_NO_MATCHES_FOUND = 200
-EXIT_CODE_INVALID_FILE_PATH = 201
-EXIT_CODE_FTP_MOVE_ERROR = 202
+try:
+    import exit_codes as ec
+except BaseException:
+    from . import exit_codes as ec
 
 def get_args():
     parser = argparse.ArgumentParser()
@@ -107,14 +106,14 @@ def move_ftp_file(
     # check if source file exists
     if not os.path.isfile(source_full_path):
         print(f'{source_full_path} does not exist')
-        sys.exit(EXIT_CODE_INVALID_FILE_PATH)
+        sys.exit(ec.EXIT_CODE_INVALID_FILE_PATH)
 
     # move files from one path to another
     try:
         client.rename(source_full_path, destination_full_path)
     except Exception as e:
         print(f"failed to move {source_full_path} due to error: {e}")
-        sys.exit(EXIT_CODE_FTP_MOVE_ERROR)
+        sys.exit(ec.EXIT_CODE_FTP_MOVE_ERROR)
 
     print(f'{source_full_path} successfully moved to '
           f'{destination_full_path}')
@@ -133,7 +132,7 @@ def get_client(host, port, username, password):
     except Exception as e:
         print(f'Error accessing the FTP server with the specified credentials')
         print(f'The server says: {e}')
-        sys.exit(EXIT_CODE_INCORRECT_CREDENTIALS)
+        sys.exit(ec.EXIT_CODE_INCORRECT_CREDENTIALS)
 
 
 def main():
@@ -162,7 +161,7 @@ def main():
 
         if number_of_matches == 0:
             print(f'No matches were found for regex "{source_file_name}".')
-            sys.exit(EXIT_CODE_NO_MATCHES_FOUND)
+            sys.exit(ec.EXIT_CODE_NO_MATCHES_FOUND)
 
         print(f'{len(matching_file_names)} files found. Preparing to move...')
 
