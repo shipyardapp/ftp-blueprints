@@ -38,7 +38,7 @@ def get_args():
                         required=True)
     parser.add_argument('--source-folder-name',
                         dest='source_folder_name',
-                        default='', required=False)
+                        default='', required=True)
     return parser.parse_args()
 
 
