@@ -108,15 +108,12 @@ def move_ftp_file(
     current_dir = client.pwd()
     source_path = os.path.normpath(os.path.join(current_dir,source_full_path))
     dest_path = os.path.normpath(os.path.join(current_dir,destination_full_path))
-    # check if source file exists
-    # if not os.path.isfile(source_path):
-    #     print(f'{source_path} does not exist')
-    #     sys.exit(ec.EXIT_CODE_INVALID_FILE_PATH)
     # move files from one path to another
     try:
         client.rename(source_path, dest_path)
     except Exception as e:
         print(f"failed to move {source_path} due to error: {e}")
+        print(f"Ensure that the source/destination file name and folder name are correct")
         sys.exit(ec.EXIT_CODE_FTP_MOVE_ERROR)
 
     print(f'{source_path} successfully moved to '
