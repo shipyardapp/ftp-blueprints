@@ -148,6 +148,9 @@ def main():
         source_file_name)
     destination_folder_name = shipyard.files.clean_folder_name(args.destination_folder_name)
     source_file_name_match_type = args.source_file_name_match_type
+    ## TODO remove 
+    print(f"path is {source_full_path}")
+    print(f"dest path is {destination_folder_name}")
 
     client = get_client(host=host, port=port, username=username,
                         password=password)
