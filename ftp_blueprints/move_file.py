@@ -17,7 +17,8 @@ def get_args():
                         choices={
                             'exact_match',
                             'regex_match'},
-                        required=True)
+                        default='exact_match',
+                        required=False)
     parser.add_argument('--source-file-name', dest='source_file_name',
                         required=True)
     parser.add_argument('--source-folder-name', dest='source_folder_name',
@@ -103,20 +104,23 @@ def move_ftp_file(
     """
     Move a single file from one directory of the ftp server to another
     """
+    # update the file path of the client
+    current_dir = client.pwd()
+    source_path = os.path.normpath(os.path.join(current_dir,source_full_path))
+    dest_path = os.path.normpath(os.path.join(current_dir,destination_full_path))
     # check if source file exists
-    if not os.path.isfile(source_full_path):
-        print(f'{source_full_path} does not exist')
-        sys.exit(ec.EXIT_CODE_INVALID_FILE_PATH)
-
+    # if not os.path.isfile(source_path):
+    #     print(f'{source_path} does not exist')
+    #     sys.exit(ec.EXIT_CODE_INVALID_FILE_PATH)
     # move files from one path to another
     try:
-        client.rename(source_full_path, destination_full_path)
+        client.rename(source_path, dest_path)
     except Exception as e:
-        print(f"failed to move {source_full_path} due to error: {e}")
+        print(f"failed to move {source_path} due to error: {e}")
         sys.exit(ec.EXIT_CODE_FTP_MOVE_ERROR)
 
-    print(f'{source_full_path} successfully moved to '
-          f'{destination_full_path}')
+    print(f'{source_path} successfully moved to '
+          f'{dest_path}')
 
 
 def get_client(host, port, username, password):
@@ -148,13 +152,8 @@ def main():
         source_file_name)
     destination_folder_name = shipyard.files.clean_folder_name(args.destination_folder_name)
     source_file_name_match_type = args.source_file_name_match_type
-    ## TODO remove 
-    print(f"path is {source_full_path}")
-    print(f"dest path is {destination_folder_name}")
-
     client = get_client(host=host, port=port, username=username,
                         password=password)
-
     if source_file_name_match_type == 'regex_match':
         file_names, folders = find_files_in_directory(client, source_folder_name)
         matching_file_names = shipyard.files.find_all_file_matches(

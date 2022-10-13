@@ -31,7 +31,8 @@ def get_args():
                         choices={
                             'exact_match',
                             'regex_match'},
-                        required=True)
+                        required=False,
+                        default = 'exact_match')
     parser.add_argument('--source-file-name', 
                         dest='source_file_name',
                         required=True)
@@ -76,13 +77,17 @@ def delete_ftp_file(client, folder_name, file_name):
     """
     Delete a selected file from the FTP server.
     """
+    current_dir = client.pwd()
+    target = os.path.join(current_dir,folder_name,file_name)
+    target_norm = os.path.normpath(target)
     try:
-        client.ftpObject.cwd(folder_name)
-        client.ftpObject.delete(file_name)
+        # client.ftpObject.cwd(folder_name)
+        # client.ftpObject.delete(file_name)
+        client.delete(target_norm)
         print(f'Successfully deleted {file_name}')
     except Exception as e:
-        print(f'Failed to delete file')
-        raise(e)
+        print(f'Failed to delete file {target_norm}. Ensure that the folder path and file name our correct') 
+        sys.exit(ec.EXIT_CODE_INVALID_FILE_PATH)
     return
 
 
