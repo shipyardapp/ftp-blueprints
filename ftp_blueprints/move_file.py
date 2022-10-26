@@ -48,6 +48,18 @@ def get_args():
     return parser.parse_args()
 
 
+def is_file(ftp_client,filename):
+    """
+    Helper function to check if the path in an ftp server is a file or a directory. 
+    If it is a directory, ftp.size returns None
+    """
+    try:
+        if ftp_client.size(filename) is not None:
+            return True
+    except Exception as e:
+        return False
+
+
 def find_files_in_directory(
         client,
         folder_filter):
@@ -67,17 +79,10 @@ def find_files_in_directory(
         if '/' not in name:
             name = f'{folder_filter}/{name}'
 
-        try:
-            client.cwd(name)
-            # If you can change the directory to the entity_name, it's a
-            # folder.
+        if is_file(client,name):
+            files.append(name)
+        else:
             folders.append(name)
-        except ftplib.error_perm:
-            files.append(name)  # If you can't, it's a file.
-            continue
-        client.cwd(original_dir)
-
-    folders.remove(folder_filter)
 
     return files, folders
 
@@ -151,6 +156,9 @@ def main():
     source_file_name_match_type = args.source_file_name_match_type
     client = get_client(host=host, port=port, username=username,
                         password=password)
+    ## if the source folder name is omitted, then use the current working direcotry
+    if source_folder_name == '':
+        source_folder_name = client.pwd()
     if source_file_name_match_type == 'regex_match':
         file_names, folders = find_files_in_directory(client, source_folder_name)
         matching_file_names = shipyard.files.find_all_file_matches(
