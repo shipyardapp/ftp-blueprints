@@ -132,6 +132,7 @@ def get_client(host, port, username, password):
     """
     try:
         client = ftplib.FTP()
+        # client.set_pasv(False) ## setting to active mode
         client.connect(host, int(port))
         client.login(username, password)
         return client
@@ -172,10 +173,13 @@ def main():
 
         print(f'{len(matching_file_names)} files found. Preparing to move...')
 
-        for index, key_name in enumerate(matching_file_names):
-            destination_full_path = shipyard.files.combine_folder_and_file_name(
-                destination_folder_name,
-                shipyard.files.extract_file_name_from_source_full_path(key_name)
+        for index, key_name in enumerate(matching_file_names,1):
+            destination_full_path = shipyard.files.determine_destination_full_path(
+                destination_folder_name = destination_folder_name,
+                destination_file_name = args.destination_file_name, 
+                source_full_path = key_name,
+                file_number = None if len(matching_file_names) == 1 else index
+
             )
             if len(destination_full_path.split('/')) > 1:
                 path, file_name = destination_full_path.rsplit('/', 1)
@@ -186,9 +190,10 @@ def main():
                             destination_full_path=destination_full_path)
 
     else:
+        dest_file = shipyard.files.determine_destination_file_name(source_full_path = source_full_path,destination_file_name= args.destination_file_name)
         destination_full_path = shipyard.files.combine_folder_and_file_name(
             destination_folder_name,
-            args.destination_file_name,
+            dest_file,
             )
         if len(destination_full_path.split('/')) > 1:
             path, file_name = destination_full_path.rsplit('/', 1)
