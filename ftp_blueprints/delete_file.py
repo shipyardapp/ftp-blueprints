@@ -73,20 +73,15 @@ def find_files_in_directory(
     return files, folders
 
 
-def delete_ftp_file(client, folder_name, file_name):
+def delete_ftp_file(client, file_path):
     """
     Delete a selected file from the FTP server.
     """
-    current_dir = client.pwd()
-    target = os.path.join(current_dir,folder_name,file_name)
-    target_norm = os.path.normpath(target)
     try:
-        # client.ftpObject.cwd(folder_name)
-        # client.ftpObject.delete(file_name)
-        client.delete(target_norm)
-        print(f'Successfully deleted {file_name}')
+        client.delete(file_path)
+        print(f'Successfully deleted {file_path}')
     except Exception as e:
-        print(f'Failed to delete file {target_norm}. Ensure that the folder path and file name our correct') 
+        print(f'Failed to delete file {file_path}. Ensure that the folder path and file name our correct') 
         sys.exit(ec.EXIT_CODE_INVALID_FILE_PATH)
     return
 
@@ -143,12 +138,13 @@ def main():
             
             print(f'Deleting file {index+1} of {len(matching_file_names)} out of {number_of_matches}')
             try:
-                delete_ftp_file(client=client, folder_name=folder_name, file_name=file_name)
+                delete_ftp_file(client = client, file_path = file_name)
             except Exception as e:
                 print(f'Failed to delete {file_name}... Skipping')
     else:
+        file_path = shipyard.files.combine_folder_and_file_name(folder_name, file_name)
         try:
-            delete_ftp_file(client=client, folder_name=folder_name, file_name=file_name)
+            delete_ftp_file(client=client,file_path= file_path) 
         except Exception as e:
             print(f'The server says: {e}')
             print(f'Most likely, the file name/folder name you specified has typos or the full folder name was not provided. Check these and try again.')
