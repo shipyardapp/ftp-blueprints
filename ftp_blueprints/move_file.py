@@ -5,6 +5,7 @@ import glob
 import sys
 import shipyard_utils as shipyard
 import ftplib
+from copy import deepcopy
 try:
     import exit_codes as ec
 except BaseException:
@@ -59,32 +60,22 @@ def is_file(ftp_client,filename):
     except Exception as e:
         return False
 
-
-def find_files_in_directory(
-        client,
-        folder_filter):
+def get_all_nested_items(client,working_directory,dir_list = []):
     """
-    Pull in a list of all entities under a specific directory and categorize them into files and folders.
-
-    Params:
-    folder_filter (str) -> the folder path to start searching entities from
+    Recursive function to get all the nested files and directories on the FTP server.
+    @params:
+        client: FTP client
+        working_directory: the folder path to start the function call
     """
-    files = []
-    folders = []
-    original_dir = client.pwd()
-    names = client.nlst(folder_filter)
-    for name in names:
-        # Accounts for an issue where some FTP servers return file names
-        # without folder prefixes.
-        if '/' not in name:
-            name = f'{folder_filter}/{name}'
-
-        if is_file(client,name):
-            files.append(name)
+    dirs = deepcopy(dir_list)
+    paths = client.nlst(working_directory)
+    for path in paths:
+        if not is_file(client,path):
+            dirs.append(path)
+            dirs = get_all_nested_items(client,path,dir_list = dirs)
         else:
-            folders.append(name)
-
-    return files, folders
+            dirs.append(path)
+    return dirs
 
 
 def ftp_create_new_folders(client, destination_path):
@@ -161,7 +152,7 @@ def main():
     if source_folder_name == '':
         source_folder_name = client.pwd()
     if source_file_name_match_type == 'regex_match':
-        file_names, folders = find_files_in_directory(client, source_folder_name)
+        file_names = get_all_nested_items(client,source_folder_name)
         matching_file_names = shipyard.files.find_all_file_matches(
             file_names, re.compile(source_file_name))
 
@@ -185,7 +176,7 @@ def main():
                 path, file_name = destination_full_path.rsplit('/', 1)
                 ftp_create_new_folders(client=client, destination_path=path)
             file_name = destination_full_path.rsplit('/', 1)[-1]
-            print(f'Moving file {index+1} of {len(matching_file_names)}')
+            print(f'Moving file {index} of {len(matching_file_names)}')
             move_ftp_file(client=client, source_full_path=key_name,
                             destination_full_path=destination_full_path)
 
