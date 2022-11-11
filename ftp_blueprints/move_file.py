@@ -71,7 +71,7 @@ def get_all_nested_items(client,working_directory,dir_list = []):
     paths = client.nlst(working_directory)
     for path in paths:
         if not is_file(client,path):
-            dirs.append(path)
+            # dirs.append(path)
             dirs = get_all_nested_items(client,path,dir_list = dirs)
         else:
             dirs.append(path)
@@ -153,8 +153,12 @@ def main():
         source_folder_name = client.pwd()
     if source_file_name_match_type == 'regex_match':
         file_names = get_all_nested_items(client,source_folder_name)
-        matching_file_names = shipyard.files.find_all_file_matches(
-            file_names, re.compile(source_file_name))
+        extracted_files = list(map(lambda x: shipyard.files.extract_file_name_from_source_full_path(x),file_names))
+        matching_file_names = []
+        for file, extract in zip(file_names,extracted_files):
+            match = shipyard.files.find_all_file_matches([extract],re.compile(source_file_name))
+            if len(match) > 0:
+                matching_file_names.append(file)
 
         number_of_matches = len(matching_file_names)
 
