@@ -153,12 +153,7 @@ def main():
         source_folder_name = client.pwd()
     if source_file_name_match_type == 'regex_match':
         file_names = get_all_nested_items(client,source_folder_name)
-        extracted_files = list(map(lambda x: shipyard.files.extract_file_name_from_source_full_path(x),file_names))
-        matching_file_names = []
-        for file, extract in zip(file_names,extracted_files):
-            match = shipyard.files.find_all_file_matches([extract],re.compile(source_file_name))
-            if len(match) > 0:
-                matching_file_names.append(file)
+        matching_file_names = shipyard.files.find_all_file_matches(file_names,re.compile(source_file_name))
 
         number_of_matches = len(matching_file_names)
 
