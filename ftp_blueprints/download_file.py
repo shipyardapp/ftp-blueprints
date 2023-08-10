@@ -52,8 +52,7 @@ def extract_file_name_from_source_full_path(source_full_path):
     Use the file name provided in the source_file_name variable. Should be run only
     if a destination_file_name is not provided.
     """
-    destination_file_name = os.path.basename(source_full_path)
-    return destination_file_name
+    return os.path.basename(source_full_path)
 
 
 def enumerate_destination_file_name(destination_file_name, file_number=1):
@@ -70,9 +69,9 @@ def enumerate_destination_file_name(destination_file_name, file_number=1):
 
 
 def determine_destination_file_name(
-    *,
-    source_full_path,
-    destination_file_name,
+        *,
+        source_full_path,
+        destination_file_name,
         file_number=None):
     """
     Determine if the destination_file_name was provided, or should be extracted from the source_file_name,
@@ -124,9 +123,9 @@ def determine_destination_name(
         destination_file_name=destination_file_name,
         source_full_path=source_full_path,
         file_number=file_number)
-    destination_name = combine_folder_and_file_name(
-        destination_folder_name, destination_file_name)
-    return destination_name
+    return combine_folder_and_file_name(
+        destination_folder_name, destination_file_name
+    )
 
 
 def find_files_in_directory(
@@ -183,8 +182,10 @@ def download_ftp_file(client, file_name, destination_file_name=None):
     if not os.path.exists(path):
         os.mkdir(path)
     try:
+        print(f"Attempting to download {file_name}...")
         with open(local_path, 'wb') as f:
             client.retrbinary(f'RETR {file_name}', f.write)
+        print(f'{file_name} successfully downloaded to {local_path}')
     except Exception as e:
         os.remove(local_path)
         print(f'Failed to download {file_name}')
@@ -196,18 +197,20 @@ def download_ftp_file(client, file_name, destination_file_name=None):
 
 def get_client(host, port, username, password):
     """
-    Attempts to create an FTP client at the specified hots with the
+    Attempts to create an FTP client at the specified host with the
     specified credentials
     """
+    print(f"Connecting to FTP server at {host}:{port} with user {username}...")
     try:
-        client = ftplib.FTP(timeout=3600)
+        client = ftplib.FTP(timeout=300)
         client.connect(host, int(port))
         client.login(username, password)
         client.set_pasv(True)
         client.set_debuglevel(0)
+        print(f"Connected to FTP server at {host}:{port} successfully.")
         return client
     except Exception as e:
-        print(f'Error accessing the FTP server with the specified credentials')
+        print('Error accessing the FTP server with the specified credentials')
         print(f'The server says: {e}')
         sys.exit(EXIT_CODE_INCORRECT_CREDENTIALS)
 
@@ -231,11 +234,12 @@ def main():
 
     client = get_client(host=host, port=port, username=username,
                         password=password)
+
+    print("Beginning the download process...")
     if source_file_name_match_type == 'regex_match':
         folders = [source_folder_name]
         files = []
         while folders != []:
-
             folder_filter = folders[0]
             files, folders = find_files_in_directory(
                 client=client, folder_filter=folder_filter, files=files, folders=folders)
@@ -257,12 +261,12 @@ def main():
                 destination_file_name=args.destination_file_name,
                 source_full_path=file_name, file_number=index + 1)
 
-            print(f'Downloading file {index+1} of {len(matching_file_names)}')
+            print(f'Downloading file {index + 1} of {len(matching_file_names)}')
             try:
                 download_ftp_file(client=client, file_name=file_name,
                                   destination_file_name=destination_name)
             except Exception as e:
-                print(f'Failed to download {file_name}... Skipping')
+                print(f'Failed to download {file_name} due to {e}... Skipping')
     else:
         destination_name = determine_destination_name(
             destination_folder_name=destination_folder_name,
@@ -274,9 +278,12 @@ def main():
                               destination_file_name=destination_name)
         except Exception as e:
             print(f'The server says: {e}')
-            print(f'Most likely, the file name/folder name you specified has typos or the full folder name was not provided. Check these and try again.')
+            print(
+                'Most likely, the file name/folder name you specified has typos or the full folder name was not provided. Check these and try again.'
+            )
             sys.exit(EXIT_CODE_NO_MATCHES_FOUND)
 
+    print('Download process complete.')
 
 if __name__ == '__main__':
     main()
