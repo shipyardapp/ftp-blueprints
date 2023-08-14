@@ -55,6 +55,13 @@ def extract_file_name_from_source_full_path(source_full_path):
     return os.path.basename(source_full_path)
 
 
+def is_dot_directory(full_path):
+    """
+    Determine if the provided folder_name is a dot directory.
+    """
+    return all(char == '.' for char in full_path)
+
+
 def enumerate_destination_file_name(destination_file_name, file_number=1):
     """
     Append a number to the end of the provided destination file name.
@@ -139,9 +146,14 @@ def find_files_in_directory(
     original_dir = client.pwd()
     names = client.nlst(folder_filter)
     for name in names:
-        # Accounts for an issue where some FTP servers return file names
-        # without folder prefixes.
+
+        if is_dot_directory(name):
+            # Skip relative directories
+            continue
+
         if '/' not in name:
+            # Accounts for an issue where some FTP servers return file names
+            # without folder prefixes.
             name = f'{folder_filter}/{name}'
 
         try:
@@ -189,7 +201,7 @@ def download_ftp_file(client, file_name, destination_file_name=None):
     except Exception as e:
         os.remove(local_path)
         print(f'Failed to download {file_name}')
-        raise(e)
+        raise (e)
 
     print(f'{file_name} successfully downloaded to {local_path}')
     return
@@ -284,6 +296,7 @@ def main():
             sys.exit(EXIT_CODE_NO_MATCHES_FOUND)
 
     print('Download process complete.')
+
 
 if __name__ == '__main__':
     main()
